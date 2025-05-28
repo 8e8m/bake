@@ -245,6 +245,6 @@ int main (int ac, char ** av) {
   if (!g_rm) { putchar('\n'); }
   if (run < 0) { fprintf(stderr, "%s: Exit failure\n", av0); }
   if (run > 0) { fprintf(stderr, "%s: Exit code %d\n", av0, run); }
-  return run;
+  return run ? 1 : 0;
   out_of_range: fprintf(stderr, "%s: <%d> Out of range\n", av0, g_select); return 1;
 }
