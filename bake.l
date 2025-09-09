@@ -188,7 +188,7 @@ int main (int ac, char ** av) {
           break;
         opt_list:    case 'l': run = 0; g_select = -1; break;
         opt_help:    case 'h': help(); return 0;
-        opt_quiet:   case 'q': stderr = fopen("/dev/null", "w"); break;
+        opt_quiet:   case 'q': stderr = fopen("/dev/null", "w"); if (!stderr) { stderr = stderr_quiet; perror(av0); return 1; } break;
         opt_color:   case 'c': g_color = 0; break;
         opt_expunge: case 'x': if (g_select > 0) { g_rm = 1; } break;
         opt_default:  default: fprintf(stderr, "%s: Unknown option '%s'\n", av0, av[0]); return 1;
