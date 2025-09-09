@@ -4,10 +4,10 @@
 %{
 #include <ctype.h>
 
-#define CHAR(c)          do { if (stdout) { fputc(c, stdout);             } if (g_pipe) { fputc(c, g_pipe);             } } while (0)
-#define STRING(s)        do { if (stdout) { fputs(s, stdout);             } if (g_pipe) { fputs(s, g_pipe);             } } while (0)
-#define FORMAT(...)      do { if (stdout) { fprintf(stdout, __VA_ARGS__); } if (g_pipe) { fprintf(g_pipe, __VA_ARGS__); } } while (0)
-#define FWRITE(str, len) do { if (stdout) { fwrite(str, 1, len, stdout);  } if (g_pipe) { fwrite(str, 1, len, g_pipe);  } } while (0)
+#define CHAR(c)          do { if (stderr) { fputc(c, stderr);             } if (g_pipe) { fputc(c, g_pipe);             } } while (0)
+#define STRING(s)        do { if (stderr) { fputs(s, stderr);             } if (g_pipe) { fputs(s, g_pipe);             } } while (0)
+#define FORMAT(...)      do { if (stderr) { fprintf(stderr, __VA_ARGS__); } if (g_pipe) { fprintf(g_pipe, __VA_ARGS__); } } while (0)
+#define FWRITE(str, len) do { if (stderr) { fwrite(str, 1, len, stderr);  } if (g_pipe) { fwrite(str, 1, len, g_pipe);  } } while (0)
 
 #undef ECHO
 #define ECHO STRING(yytext)
@@ -53,7 +53,7 @@ MACROS   ({CMD}|@STOP|{FILENAME}|@SHORT|@ARGS|@LINE|@RECURS|$@|$*|$+|@\{)
    expunge_depth = 1;
    if (g_select < 0) { ECHO; }
    else if (g_rm && !g_pipe) {
-     stdout = g_restore;
+     stderr = g_restore;
      g_pipe = g_expunge; STRING("rm '");
    }
  }
@@ -219,18 +219,18 @@ int main (int ac, char ** av) {
     g_pipe = pipeopen("/bin/sh -e /dev/stdin", "w");
   }
   if (g_rm) {
-    g_restore = stdout;
+    g_restore = stderr;
     g_expunge = g_pipe;
-    stdout = NULL;
+    stderr = NULL;
     g_pipe = NULL;
   }
   if (g_select > 0) { fprintf(stderr, g_color ? GREEN "%s" RESET ": " : "%s: ", av0); fflush(stderr); }
 
-  yylex(); fflush(stdout);
+  yylex(); fflush(stderr);
 
   if (g_rm) {
     fputc('\n', g_restore);
-    stdout = g_restore;
+    stderr = g_restore;
     g_pipe = g_expunge;
   }
   fclose(fp);
