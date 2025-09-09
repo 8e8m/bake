@@ -156,7 +156,7 @@ void print(FILE * fp, char * color_prefix, char * format, ...) {
 int main (int ac, char ** av) {
   int run = 1;
   av0 = av[0];
-  FILE * fp;
+  FILE * fp, * stderr_quiet = stderr;
   /* supports long/short, -allinone, (-X ... -X=... -X<NUM>) */
   while (++av, --ac) {
     size_t i;
@@ -168,6 +168,7 @@ int main (int ac, char ** av) {
       if (!strcmp(av[0]+2, "expunge")) { i = strlen(av[0]);                goto opt_expunge; }
       if (!strcmp(av[0]+2, "select" )) { if (!(ac-1) || !isdigit(av[1][0])) { goto opt_arg;  }
                                          ++av, --ac; i = strlen(av[0]);    goto opt_select;  }
+      if (!strcmp(av[0]+2, "quiet"  )) { i = strlen(av[0]);                goto opt_quiet;   }
       if (!strcmp(av[0]+2, "list"   )) { i = strlen(av[0]);                goto opt_list;    }
       if (!strcmp(av[0]+2, "help"   )) {                                   goto opt_help;    }
       goto opt_default;
@@ -187,6 +188,7 @@ int main (int ac, char ** av) {
           break;
         opt_list:    case 'l': run = 0; g_select = -1; break;
         opt_help:    case 'h': help(); return 0;
+        opt_quiet:   case 'q': stderr = fopen("/dev/null", "w"); break;
         opt_color:   case 'c': g_color = 0; break;
         opt_expunge: case 'x': if (g_select > 0) { g_rm = 1; } break;
         opt_default:  default: fprintf(stderr, "%s: Unknown option '%s'\n", av0, av[0]); return 1;
@@ -224,7 +226,7 @@ int main (int ac, char ** av) {
     stderr = NULL;
     g_pipe = NULL;
   }
-  if (g_select > 0) { fprintf(stderr, g_color ? GREEN "%s" RESET ": " : "%s: ", av0); fflush(stderr); }
+  if (g_select > 0 && stderr) { fprintf(stderr, g_color ? GREEN "%s" RESET ": " : "%s: ", av0); fflush(stderr); }
 
   yylex(); fflush(stderr);
 
@@ -241,10 +243,16 @@ int main (int ac, char ** av) {
 
   if (!g_rm) { fprintf(stderr, g_color ? GREEN "output" RESET ": " : "output: "); fflush(stderr); }
 
-  run = pclose(g_pipe); /* repurposed run */
-  if (!g_rm) { fputc('\n', stderr); }
-  if (run < 0) { fprintf(stderr, "%s: Exit failure\n", av0); }
-  if (run > 0) { fprintf(stderr, "%s: Exit code %d\n", av0, run); }
-  return run ? 1 : 0;
-  out_of_range: fprintf(stderr, "%s: <%d> Out of range\n", av0, g_select); return 1;
+  {
+    FILE * swap = stderr != stderr_quiet ? stderr : NULL;
+    stderr = stderr_quiet;
+
+    run = pclose(g_pipe); /* repurposed run */
+    if (swap) { fclose(stderr); stderr = swap; }
+    if (!g_rm) { fputc('\n', stderr); }
+    if (run < 0) { fprintf(stderr, "%s: Exit failure\n", av0); }
+    if (run > 0) { fprintf(stderr, "%s: Exit code %d\n", av0, run); }
+    return run ? 1 : 0;
+    out_of_range: fprintf(stderr, "%s: <%d> Out of range\n", av0, g_select); return 1;
+  }
 }
