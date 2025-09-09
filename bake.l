@@ -242,7 +242,7 @@ int main (int ac, char ** av) {
   if (!g_rm) { fprintf(stderr, g_color ? GREEN "output" RESET ": " : "output: "); fflush(stderr); }
 
   run = pclose(g_pipe); /* repurposed run */
-  if (!g_rm) { putchar('\n'); }
+  if (!g_rm) { fputc('\n', stderr); }
   if (run < 0) { fprintf(stderr, "%s: Exit failure\n", av0); }
   if (run > 0) { fprintf(stderr, "%s: Exit code %d\n", av0, run); }
   return run ? 1 : 0;
