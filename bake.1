@@ -22,7 +22,6 @@ Options must always be put before the filename, and short options may be merged 
 .HP
  \-h \-\-help, Help message
  \fB\-n \-\-dry\-run\fP, don't execute or remove anything
- \fB\-c \-\-color\fP, disables color
  \fB\-l \-\-list\fP, lists available bake blocks
  \fB\-q \-\-quiet\fP, Mutes all stderr output from bake itself, does not effect execution output in any way
  \fB\-s \-\-select\fP \<n\>, selects Nth bake block
@@ -62,6 +61,8 @@ Shell execution may be disabled with the \fB-n\fP or \fB--dry-run\fP option.
 Expunge removes exactly one file specified in the @{FILENAME} format,
 and the action is nonrecursive. Expunge simply outputs rm 'FILENAME...',
 where the FILENAME expands any instance of ' to \\'.
+
+If NO_COLOR is defined in the environment colors will not be implemented. https://no-color.org/
 
 .PP
 Other Implementations (NONDEFAULT)

@@ -164,7 +164,7 @@ int main (int ac, char ** av) {
     if (av[0][1] == '-') {
       if (av[0][2] == '\0')            { ++av, --ac;                       goto start;       }
       if (!strcmp(av[0]+2, "dry-run")) { i = strlen(av[0]);                goto opt_dry_run; }
-      if (!strcmp(av[0]+2, "color"))   { i = strlen(av[0]);                goto opt_color;   }
+      /* if (!strcmp(av[0]+2, "color"))   { i = strlen(av[0]);                goto opt_color;   } */
       if (!strcmp(av[0]+2, "expunge")) { i = strlen(av[0]);                goto opt_expunge; }
       if (!strcmp(av[0]+2, "select" )) { if (!(ac-1) || !isdigit(av[1][0])) { goto opt_arg;  }
                                          ++av, --ac; i = strlen(av[0]);    goto opt_select;  }
@@ -189,7 +189,7 @@ int main (int ac, char ** av) {
         opt_list:    case 'l': run = 0; g_select = -1; break;
         opt_help:    case 'h': help(); return 0;
         opt_quiet:   case 'q': stderr = fopen("/dev/null", "w"); if (!stderr) { stderr = stderr_quiet; perror(av0); return 1; } break;
-        opt_color:   case 'c': g_color = 0; break;
+        /* opt_color:   case 'c': g_color = 0; break; */
         opt_expunge: case 'x': if (g_select > 0) { g_rm = 1; } break;
         opt_default:  default: fprintf(stderr, "%s: Unknown option '%s'\n", av0, av[0]); return 1;
         opt_arg:               fprintf(stderr, "%s: Argument missing for '%s'\n", av0, av[0]); return 1;
@@ -198,6 +198,10 @@ int main (int ac, char ** av) {
   }
 
  start:
+  {
+    char *no_color = getenv("NO_COLOR");
+    if (no_color != NULL && no_color[0] != '\0') { g_color = 0; }
+  }
   if (!ac) { fprintf(stderr, "%s: Missing filename\n", av0); return 1; }
   if (!g_select) { goto out_of_range; }
 
