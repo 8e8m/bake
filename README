@@ -33,7 +33,7 @@ several lines with a leading backslash.
 
 -h --help       | Help message
 -n --dry-run	| don't execute or remove anything
--c --color      | disables color
+-q --quiet      | Only output subprogram output
 -l --list       | lists available Bake blocks
 -s --select <n>	| selects Nth Bake block
 -x --expunge	| Removes the file specified in the expunge block
@@ -93,6 +93,11 @@ Remove @FILENAME @NAME, and @FILE_NAME (heyo) leaving only @FILE.
 Upgraded ./install.sh to have options.
 
 s/@(FILE_?NAME|NAME)/@FILE/g
+
+2025-09-11
+
+-c destroyed from outerspace. -q added. all Bake specific output is
+now stderr.
 
 I'm finished with tool for the rest of time and have put zero effort
 into it this time. If I use it and it breaks, I'll fix it or replace
