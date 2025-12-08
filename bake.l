@@ -4,10 +4,12 @@
 %{
 #include <ctype.h>
 
-#define CHAR(c)          do { if (stderr) { fputc(c, stderr);             } if (g_pipe) { fputc(c, g_pipe);             } } while (0)
-#define STRING(s)        do { if (stderr) { fputs(s, stderr);             } if (g_pipe) { fputs(s, g_pipe);             } } while (0)
-#define FORMAT(...)      do { if (stderr) { fprintf(stderr, __VA_ARGS__); } if (g_pipe) { fprintf(g_pipe, __VA_ARGS__); } } while (0)
-#define FWRITE(str, len) do { if (stderr) { fwrite(str, 1, len, stderr);  } if (g_pipe) { fwrite(str, 1, len, g_pipe);  } } while (0)
+#define CHAR(c)          do { if (stderr2) { fputc(c, stderr2);             } if (g_pipe) { fputc(c, g_pipe);             } } while (0)
+#define STRING(s)        do { if (stderr2) { fputs(s, stderr2);             } if (g_pipe) { fputs(s, g_pipe);             } } while (0)
+#define FORMAT(...)      do { if (stderr2) { fprintf(stderr2, __VA_ARGS__); } if (g_pipe) { fprintf(g_pipe, __VA_ARGS__); } } while (0)
+#define FWRITE(str, len) do { if (stderr2) { fwrite(str, 1, len, stderr2);  } if (g_pipe) { fwrite(str, 1, len, g_pipe);  } } while (0)
+
+FILE * stderr2; // appease musl
 
 #undef ECHO
 #define ECHO STRING(yytext)
@@ -44,7 +46,7 @@ MACROS   ({CMD}|@STOP|{FILENAME}|@SHORT|@ARGS|@LINE|@RECURS|$@|$*|$+|@\{)
   first_nl = 1;
   if (yytext[yyleng-1] == '\n') { ++line;                                                      }
   if (!g_select)                {                                                            ; }
-  else if (g_select < 0)        { BEGIN FOUND; fprintf(stderr, "%s:%d:s%d: ", g_filename, line, ++nth); }
+  else if (g_select < 0)        { BEGIN FOUND; fprintf(stderr2, "%s:%d:s%d: ", g_filename, line, ++nth); }
   else if (!--g_select)         { BEGIN FOUND;                                                 }
 }
 
@@ -53,7 +55,7 @@ MACROS   ({CMD}|@STOP|{FILENAME}|@SHORT|@ARGS|@LINE|@RECURS|$@|$*|$+|@\{)
    expunge_depth = 1;
    if (g_select < 0) { ECHO; }
    else if (g_rm && !g_pipe) {
-     stderr = g_restore;
+     stderr2 = g_restore;
      g_pipe = g_expunge; STRING("rm '");
    }
  }
@@ -124,17 +126,17 @@ void shorten(char * filename, int n) {
   char * end = filename + strlen(filename);
   while (n && (end = memrchr(filename, '.', end - filename))) { --n; }
   if (!end) {
-    fprintf(stderr, "%s: Cannot shorten '%s' any further, aborting due to paranoia\n", av0, filename);
+    fprintf(stderr2, "%s: Cannot shorten '%s' any further, aborting due to paranoia\n", av0, filename);
     abort();
   }
   FWRITE(filename, end - filename);
 }
 
-void help(void) { fprintf(stderr, g_color ? BOLD "%s" RESET : "%s", "see bake(1) - \"Buy high. Sell low.\"\n"); }
+void help(void) { fprintf(stderr2, g_color ? BOLD "%s" RESET : "%s", "see bake(1) - \"Buy high. Sell low.\"\n"); }
 
 FILE * pipeopen(char * filename, char * mode) {
   FILE * pipe = popen(filename, mode);
-  if (!pipe) { fprintf(stderr, "%s: <pipeopen> %s\n", av0, strerror(errno)); exit(1); }
+  if (!pipe) { fprintf(stderr2, "%s: <pipeopen> %s\n", av0, strerror(errno)); exit(1); }
   return pipe;
 }
 
@@ -156,7 +158,8 @@ void print(FILE * fp, char * color_prefix, char * format, ...) {
 int main (int ac, char ** av) {
   int run = 1;
   av0 = av[0];
-  FILE * fp, * stderr_quiet = stderr;
+  stderr2 = fdopen(dup(STDERR_FILENO), "a+");
+  FILE * fp, * stderr2_quiet = stderr2;
   /* supports long/short, -allinone, (-X ... -X=... -X<NUM>) */
   while (++av, --ac) {
     size_t i;
@@ -182,17 +185,17 @@ int main (int ac, char ** av) {
                  if (isdigit(av[0][i+1]))         { g_select = atoi(av[0]+i+1); }
             else if (ac > 1 && isdigit(av[1][0])) { ++av, --ac; opt_select: g_select = atoi(av[0]); }
             else                                  { g_select = 0; }
-                 if (!g_select)                   { fprintf(stderr, "%s: Invalid argument for -s\n", av0); return 1; }
+                 if (!g_select)                   { fprintf(stderr2, "%s: Invalid argument for -s\n", av0); return 1; }
           }
           i = strlen(av[0]);
           break;
         opt_list:    case 'l': run = 0; g_select = -1; break;
         opt_help:    case 'h': help(); return 0;
-        opt_quiet:   case 'q': stderr = fopen("/dev/null", "w"); if (!stderr) { stderr = stderr_quiet; perror(av0); return 1; } break;
+        opt_quiet:   case 'q': stderr2 = fopen("/dev/null", "w"); if (!stderr2) { stderr2 = stderr2_quiet; perror(av0); return 1; } break;
         /* opt_color:   case 'c': g_color = 0; break; */
         opt_expunge: case 'x': if (g_select > 0) { g_rm = 1; } break;
-        opt_default:  default: fprintf(stderr, "%s: Unknown option '%s'\n", av0, av[0]); return 1;
-        opt_arg:               fprintf(stderr, "%s: Argument missing for '%s'\n", av0, av[0]); return 1;
+        opt_default:  default: fprintf(stderr2, "%s: Unknown option '%s'\n", av0, av[0]); return 1;
+        opt_arg:               fprintf(stderr2, "%s: Argument missing for '%s'\n", av0, av[0]); return 1;
       }
     }
   }
@@ -202,7 +205,7 @@ int main (int ac, char ** av) {
     char *no_color = getenv("NO_COLOR");
     if (no_color != NULL && no_color[0] != '\0') { g_color = 0; }
   }
-  if (!ac) { fprintf(stderr, "%s: Missing filename\n", av0); return 1; }
+  if (!ac) { fprintf(stderr2, "%s: Missing filename\n", av0); return 1; }
   if (!g_select) { goto out_of_range; }
 
   g_filename = av[0];
@@ -215,7 +218,7 @@ int main (int ac, char ** av) {
 
   /* open and prepare ac, av */
   if (!(yyin = fp = fopen(g_filename, "rb")))
-  { fprintf(stderr, g_color ? RED "%s" RESET ": '" BOLD "%s" RESET "' %s\n" : "%s: '%s' %s\n", av0, g_filename, strerror(errno)); return 1; }
+  { fprintf(stderr2, g_color ? RED "%s" RESET ": '" BOLD "%s" RESET "' %s\n" : "%s: '%s' %s\n", av0, g_filename, strerror(errno)); return 1; }
   g_ac = --ac, g_av = ++av;
 
   /* setup pipe and output */
@@ -225,18 +228,18 @@ int main (int ac, char ** av) {
     g_pipe = pipeopen("/bin/sh -e /dev/stdin", "w");
   }
   if (g_rm) {
-    g_restore = stderr;
+    g_restore = stderr2;
     g_expunge = g_pipe;
-    stderr = NULL;
+    stderr2 = NULL;
     g_pipe = NULL;
   }
-  if (g_select > 0 && stderr) { fprintf(stderr, g_color ? GREEN "%s" RESET ": " : "%s: ", av0); fflush(stderr); }
+  if (g_select > 0 && stderr2) { fprintf(stderr2, g_color ? GREEN "%s" RESET ": " : "%s: ", av0); fflush(stderr2); }
 
-  yylex(); fflush(stderr);
+  yylex(); fflush(stderr2);
 
   if (g_rm) {
     fputc('\n', g_restore);
-    stderr = g_restore;
+    stderr2 = g_restore;
     g_pipe = g_expunge;
   }
   fclose(fp);
@@ -245,18 +248,18 @@ int main (int ac, char ** av) {
 
   if (!run) { return 0; }
 
-  if (!g_rm) { fprintf(stderr, g_color ? GREEN "output" RESET ": " : "output: "); fflush(stderr); }
+  if (!g_rm) { fprintf(stderr2, g_color ? GREEN "output" RESET ": " : "output: "); fflush(stderr2); }
 
   {
-    FILE * swap = stderr != stderr_quiet ? stderr : NULL;
-    stderr = stderr_quiet;
+    FILE * swap = stderr2 != stderr2_quiet ? stderr2 : NULL;
+    stderr2 = stderr2_quiet;
 
     run = pclose(g_pipe); /* repurposed run */
-    if (swap) { fclose(stderr); stderr = swap; }
-    if (!g_rm) { fputc('\n', stderr); }
-    if (run < 0) { fprintf(stderr, "%s: Exit failure\n", av0); }
-    if (run > 0) { fprintf(stderr, "%s: Exit code %d\n", av0, run); }
+    if (swap) { fclose(stderr2); stderr2 = swap; }
+    if (!g_rm) { fputc('\n', stderr2); }
+    if (run < 0) { fprintf(stderr2, "%s: Exit failure\n", av0); }
+    if (run > 0) { fprintf(stderr2, "%s: Exit code %d\n", av0, run); }
     return run ? 1 : 0;
-    out_of_range: fprintf(stderr, "%s: <%d> Out of range\n", av0, g_select); return 1;
+    out_of_range: fprintf(stderr2, "%s: <%d> Out of range\n", av0, g_select); return 1;
   }
 }
