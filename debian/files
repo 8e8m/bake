@@ -1,0 +1,3 @@
+bake-dbgsym_20251208_amd64.deb debug optional automatic=yes
+bake_20251208_amd64.buildinfo utils optional
+bake_20251208_amd64.deb utils optional

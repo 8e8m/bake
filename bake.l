@@ -1,4 +1,4 @@
-/* @BAKE flex @FILE && cc -Wall -Wextra -Wwrite-strings -std=c99 -D_GNU_SOURCE -o @SHORT lex.yy.c @ARGS @STOP */
+/* @BAKE flex @FILE && cc -Wall -Wextra -Wwrite-strings -std=c99 -D_GNU_SOURCE -o @SHORT lex.yy.c -ggdb @ARGS @STOP */
 /* Licensed under the public domain. */
 
 %{
@@ -44,7 +44,7 @@ MACROS   ({CMD}|@STOP|{FILENAME}|@SHORT|@ARGS|@LINE|@RECURS|$@|$*|$+|@\{)
   first_nl = 1;
   if (yytext[yyleng-1] == '\n') { ++line;                                                      }
   if (!g_select)                {                                                            ; }
-  else if (g_select < 0)        { BEGIN FOUND; printf("%s:%d:s%d: ", g_filename, line, ++nth); }
+  else if (g_select < 0)        { BEGIN FOUND; fprintf(stderr, "%s:%d:s%d: ", g_filename, line, ++nth); }
   else if (!--g_select)         { BEGIN FOUND;                                                 }
 }
 

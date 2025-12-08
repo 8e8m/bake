@@ -5,17 +5,20 @@ Run embedded scripts.
 Bootstrap with ./awake bake.l
 then compile further with ./bake,
 
-or JUST install by running ./install.sh (has --help)
+OR JUST RUN: ./install.sh (has --help)
 
 ---
 
 bake [-chln] [-s <n>] <FILENAME> [ARGS...]; version 20250104
 
 Bake is a simple tool meant to execute embedded shell commands within
-any file. It executes with /bin/sh the command after a "@BAKE " to
-the end of the line (a UNIX newline: '\n') or to the first instance
-of @STOP. All @BAKE ... @STOP statements must become before any @BAKE
-... EOLs.
+any file. It executes with /bin/sh the command after a "@BAKE " to the
+end of the line (a UNIX newline: '\n') OR to the first instance of
+@STOP. All (@BAKE - @STOP) statements must precede all (@BAKE - EOL)
+statements.
+
+I cannot stress this enough: Bake executes in the directory of the
+file specified.
 
 It expands some macros,
   @FILE                 - filename
@@ -27,9 +30,26 @@ It expands some macros,
   @RECURS               - the full path name to the executable
   @LINE                 - line number at the selected @BAKE
 
+Old way of things that you shouldn't do unless you're me or @agvxov:
+  $@ = @FILE
+  $* = @SHORT
+  $+ = @ARGS
+
 All  macros  can be  exempted  by  prefixing  them with  a  backslash,
 which'll be subtracted in the  expansion. commands may be spanned over
 several lines with a leading backslash.
+
+A list of all @BAKEs in a file can be retrieved with
+  bake -l file.c
+To select one of these, just use
+  bake -s <N>
+
+@{filename-to-remove} will remove a specific file when
+  bake -x /path/to/file.c
+  -> remove at directory of /path/to the file filename-to-remove
+with respect to the chosen statement.
+
+See the manpage for more info.
 
 -h --help       | Help message
 -n --dry-run	| don't execute or remove anything
@@ -57,7 +77,12 @@ with the exceptions of multi-line commands and usable expunge.
 
 Changelog
 
-Bake was created on 2023/09/13, and complete as of 2024/03/02.
+Bake was created on 2023-09-13, and complete as of 2024-03-02.  While
+it was completed in 2024-03-02 with a focus on very low, tight memory
+usage this was not the final version.
+
+On 2024-09-27, Bake was revised using Flex, which was faster.  I
+consider the Flex version finished as of 2025-09-11.
 
 2024-03-02
 
@@ -89,7 +114,7 @@ See --help
 2025-01-04
 
 Introducing some breaking changes.
-Remove @FILENAME @NAME, and @FILE_NAME (heyo) leaving only @FILE.
+Removed @FILENAME @NAME, and @FILE_NAME (heyo) leaving only @FILE.
 Upgraded ./install.sh to have options.
 
 s/@(FILE_?NAME|NAME)/@FILE/g
@@ -97,23 +122,32 @@ s/@(FILE_?NAME|NAME)/@FILE/g
 2025-09-11
 
 -c destroyed from outerspace. -q added. all Bake specific output is
-now stderr.
+now stderr. use NO_COLOR=1 instead of -c.
 
-I'm finished with tool for the rest of time and have put zero effort
-into it this time. If I use it and it breaks, I'll fix it or replace
-it with something better.
+2025-12-08
 
-Anonson, the original creator made a ebuild for Gentoo a few months
-ago, and I will link it here when I receive that link from him. I may
-one day dare to package Bake as a deb. I would likely have to rename
-bake to ebake, which is somehow worse than the original name of eMake.
+Fixed bug with not literally everything being stderr.  Which was -l
+misalignment.
 
-ebuild:
+--
+
+Anonson, the original creator, made a ebuild for Gentoo:
  See <https://bis64wqhh3louusbd45iyj76kmn4rzw5ysawyan5bkxwyzihj67c5lid.onion/anon/agvxov-overlay>
+ (this link is dead because Gitea died on him. If I get notice of him
+  mirroring it, I'll link it here.)
 
  packaged under the agvxov overlay as dev-build/bake, see the README
  for including this into your installation.
 
 debian: Provided in repo, run...
- ./deb/package
- dpkg -i deb/bake.deb
+ cd ..; mkdir bake2; mv bake bake2/bake-20251208; mv bake2 bake
+ cd bake/bake-20251208
+ dpkg-buildpackage -us -uc
+ dpkg -i ../bake_20251208_*.deb
+
+Or download from the releases.
+
+I'm finished with tool for the rest of time.
+If I use it and it breaks, I'll fix it. If there's an issue:
+
+Send mail to <mailto:emil@chud.cyou>

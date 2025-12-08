@@ -1,0 +1,24 @@
+bake (20251208) stable; urgency=low
+
+  [ Emil Williams ]
+  * Bug fix with -l not being stderr, causing misalignment.
+
+ -- Emil Williams <emil@chud.cyou> Mon, 08 Dec 2025 21:44:22 +0000
+
+bake (20250911) stable; urgency=low
+
+  [ Emil Williams ]
+  * Removed -c --color -> NO_COLOR standard is now respected.
+  * Added -q --quiet -> mutes all output from bake itself.
+  * All Bake specific output is now stderr, per bug report.
+  * Removed @FILENAME @NAME, & @FILE_NAME, leaving only @FILE. s/@(FILE_?NAME|NAME)/@FILE/g
+  * Rewritten with Flex.
+
+ -- Emil Williams <emil@chud.cyou> Thu, 25 Sep 2025 18:05:00 +0000
+
+bake (20240101) stable; urgency=low
+
+  [ Emil Williams ]
+  * Created Debian Package
+
+ -- Emil Williams <emilemilemil@cock.li>  Sat, 04 Jan 2025 22:34:26 +0000

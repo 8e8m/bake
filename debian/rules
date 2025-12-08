@@ -1,0 +1,9 @@
+#!/usr/bin/make -f
+
+%:
+	dh $@
+
+override_dh_auto_install:
+	./awake bake.l
+	install -D -m 0755 bake $(CURDIR)/debian/bake/usr/bin/bake
+	install -D -m 0644 bake.1 $(CURDIR)/debian/bake/usr/share/man/man1/bake.1

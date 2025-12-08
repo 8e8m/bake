@@ -1,11 +1,13 @@
 Source: bake
-Version: 20250911
-Section: devel
+Section: utils
 Priority: optional
-Maintainer: Emil Williams <emilemilemil@cock.li>
+Maintainer: Emil Williams <emil@chud.cyou>
+Build-Depends: debhelper-compat (= 13)
+Standards-Version: 4.6.2
+
 Package: bake
-Architecture: amd64
-Depends: libc-bin (>= 2)
+Architecture: any
+Depends: ${misc:Depends}, ${shlibs:Depends}
 Description: Run Embedded Shell Scripts
  It executes with /bin/sh the command after a "@BAKE " to the end of
  the line (a UNIX newline: '\n') or to the first instance of @STOP.
