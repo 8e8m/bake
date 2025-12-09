@@ -1,4 +1,4 @@
-/* @BAKE flex @FILE && cc -Wall -Wextra -Wwrite-strings -std=c99 -D_GNU_SOURCE -o @SHORT lex.yy.c -ggdb -fdebug-prefix-map=$PWD=. @ARGS @STOP */
+/* @BAKE flex @FILE && gcc -Wall -Wextra -Wwrite-strings -std=c99 -D_GNU_SOURCE -o @SHORT lex.yy.c -ggdb -fdebug-prefix-map=$PWD=. @ARGS @STOP */
 /* Licensed under the public domain. */
 
 %{
