@@ -1,4 +1,5 @@
-/* @BAKE flex -D_FORTIFY_SOURCE=2 -D_GNU_SOURCE @FILE && gcc -std=c99 -ggdb -Wall -Wextra -Wwrite-strings -Wformat -Werror=format-security -fstack-protector-strong -fstack-clash-protection -fcf-protection -fdebug-prefix-map=$PWD=. -Wl,-z,now -O2 -D_FORTIFY_SOURCE=2 -D_GNU_SOURCE -o @SHORT lex.yy.c @ARGS @STOP */
+/* @BAKE flex -D_FORTIFY_SOURCE=2 -D_GNU_SOURCE @FILE && gcc -std=c99 -ggdb -Wall -Wextra -Wwrite-strings -Wformat -Werror=format-security -fstack-protector-strong -fstack-clash-protection -fcf-protection -fdebug-prefix-map=$PWD=. -Wl,-z,now -O2 -D_FORTIFY_SOURCE=2 -D_GNU_SOURCE -o @SHORT lex.yy.c @ARGS @STOP
+   @BAKE flex -D_FORTIFY_SOURCE=2 -D_GNU_SOURCE @FILE && musl-gcc --static -std=c99 -ggdb -Wall -Wextra -Wwrite-strings -Wformat -Werror=format-security -fstack-protector-strong -fstack-clash-protection -fcf-protection -fdebug-prefix-map=$PWD=. -Wl,-z,now -O2 -D_FORTIFY_SOURCE=2 -D_GNU_SOURCE -o @SHORT lex.yy.c @ARGS && cp bake bake-dbg && strip bake @STOP */
 /* Licensed under the CC0-1.0. */
 
 %{

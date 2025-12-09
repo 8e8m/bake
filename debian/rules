@@ -7,3 +7,7 @@ override_dh_auto_install:
 	./awake bake.l
 	install -D -m 0755 bake $(CURDIR)/debian/bake/usr/bin/bake
 	install -D -m 0644 bake.1 $(CURDIR)/debian/bake/usr/share/man/man1/bake.1
+
+override_dh_auto_clean:
+	rm -f lex.yy.c bake bake-dbg
+	dh_auto_clean

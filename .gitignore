@@ -1,4 +1,3 @@
 bake
+bake-dbg
 lex.yy.c
-*.gz
-*.deb
