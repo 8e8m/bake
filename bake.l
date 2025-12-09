@@ -1,5 +1,5 @@
-/* @BAKE flex @FILE && gcc -Wall -Wextra -Wwrite-strings -std=c99 -D_GNU_SOURCE -o @SHORT lex.yy.c -ggdb -fdebug-prefix-map=$PWD=. @ARGS @STOP */
-/* Licensed under the public domain. */
+/* @BAKE flex -D_FORTIFY_SOURCE=2 -D_GNU_SOURCE @FILE && gcc -std=c99 -ggdb -Wall -Wextra -Wwrite-strings -Wformat -Werror=format-security -fstack-protector-strong -fstack-clash-protection -fcf-protection -fdebug-prefix-map=$PWD=. -Wl,-z,now -O2 -D_FORTIFY_SOURCE=2 -D_GNU_SOURCE -o @SHORT lex.yy.c @ARGS @STOP */
+/* Licensed under the CC0-1.0. */
 
 %{
 #include <ctype.h>
@@ -113,7 +113,7 @@ void root(char * filename) {
   if (!realpath(filename, path)) { return; }
   if ((terminator = strrchr(path, '/'))) {
     *terminator = '\0';
-    chdir(path);
+    if(chdir(path)) { abort(); }
   }
 }
 

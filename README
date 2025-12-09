@@ -60,7 +60,7 @@ See the manpage for more info.
 
 It roots the shell execution in the directory of the given file.
 
-Licensed under the public domain.
+Licensed under the CC0-1.0.
 
 ---
 
@@ -140,8 +140,7 @@ Anonson, the original creator, made a ebuild for Gentoo:
  for including this into your installation.
 
 debian: Provided in repo, run...
- cd ..; mkdir bake2; mv bake bake2/bake-20251208; mv bake2 bake
- cd bake/bake-20251208
+ tar cJvf bake_20251208.orig.tar.xz --exclude=debian bake-20251208/
  dpkg-buildpackage -us -uc
  dpkg -i ../bake_20251208_*.deb
 

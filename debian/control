@@ -2,8 +2,12 @@ Source: bake
 Section: utils
 Priority: optional
 Maintainer: Emil Williams <emil@chud.cyou>
+Homepage: https://xolatile.top/bake
+Vcs-Git: https://github.com/8e8m/bake.git
+Vcs-Browser: https://github.com/8e8m/bake
 Build-Depends: debhelper-compat (= 13)
-Standards-Version: 4.6.2
+Standards-Version: 4.7.2
+Rules-Requires-Root: no
 
 Package: bake
 Architecture: any
