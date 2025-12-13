@@ -1,4 +1,4 @@
-.TH BAKE "1" "December 2025" "bake 20251208" "User Commands"
+.TH BAKE "1" "December 2025" "bake 20251213" "User Commands"
 .SH NAME
 .B bake
 \- file embeddable scripts
@@ -38,11 +38,11 @@ These macros will expand to their counterpart before execution.
 .B @FILE, $@
 returns target\-file (abc.x.txt)
 .TP
-.B @SHORT, $*
+.B @SHORT[:N], $*
 returns target\-file without suffix (abc.x.txt \-> abc.x)
 supports choice syntax, @SHORT:N removes N suffixes, so (a.b.c 2 -> a)
 .TP
-.B @ARGS, $+
+.B @ARGS[:N], $+
 returns \fBarguments\fP, supports choice syntax: @ARGS:N prints the
 Nth argument starting from 0, leading plus prints inclusive remaining
 arguments (@ARGS:N+)
@@ -50,8 +50,31 @@ arguments (@ARGS:N+)
 .B @LINE
 returns the line number
 .TP
-.B @RECURS
+.B @RECURS[:N]
 returns full executable name (e.g. /usr/local/bin/bake)
+.EX
+@RECURS -s N = @RECURS:N
+.EE
+.TP
+.B @RECUR:N
+This is a specialized for one purpose, and should be ignored in general.
+returns full executable name and the filename, also silences bake.
+(e.g. /usr/local/bin/bake @FILE)
+.EX
+@RECURS:N -q @FILE = @RECUR:N
+.EE
+.TP
+.B @CC
+This is a specialized for one purpose, and should be ignored in general.
+You might have to use recursion to properly phrase CC commands with this.
+.EX
+@CC = cc @ARGS:0 -o @SHORT @FILE @ARGS:1
+@CC:/path/to/cc = /path/to/cc @ARGS:0 -o @SHORT @FILE @ARGS:1
+
+Example recursion:
+@BAKE @RECUR:2 "left" "right"
+@BAKE @CC
+.EE
 
 .PP
 Additional Features And Notes
@@ -89,4 +112,4 @@ int main (void) {
 .EE
 .SH COPYRIGHT
 .PP
-Licensed under the.
+Licensed under the CC0-1.0.

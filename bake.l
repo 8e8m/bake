@@ -1,5 +1,5 @@
-/* @BAKE flex -D_FORTIFY_SOURCE=2 -D_GNU_SOURCE @FILE && gcc -std=c99 -ggdb -Wall -Wextra -Wwrite-strings -Wformat -Werror=format-security -fstack-protector-strong -fstack-clash-protection -fcf-protection -fdebug-prefix-map=$PWD=. -Wl,-z,now -O2 -D_FORTIFY_SOURCE=2 -D_GNU_SOURCE -o @SHORT lex.yy.c @ARGS @STOP
-   @BAKE flex -D_FORTIFY_SOURCE=2 -D_GNU_SOURCE @FILE && musl-gcc --static -std=c99 -ggdb -Wall -Wextra -Wwrite-strings -Wformat -Werror=format-security -fstack-protector-strong -fstack-clash-protection -fcf-protection -fdebug-prefix-map=$PWD=. -Wl,-z,now -O2 -D_FORTIFY_SOURCE=2 -D_GNU_SOURCE -o @SHORT lex.yy.c @ARGS && cp bake bake-dbg && strip bake @STOP */
+/* @BAKE flex -D_FORTIFY_SOURCE=2 -D_GNU_SOURCE @FILE && gcc -std=c99 -ggdb -Wall -Wextra -Wwrite-strings -Wformat -Werror=format-security -Wno-discarded-qualifiers -fstack-protector-strong -fstack-clash-protection -fcf-protection -fdebug-prefix-map=$PWD=. -Wl,-z,now -O2 -D_FORTIFY_SOURCE=2 -D_GNU_SOURCE -o @SHORT lex.yy.c @ARGS @STOP
+@BAKE flex -D_FORTIFY_SOURCE=2 -D_GNU_SOURCE @FILE && musl-gcc --static -std=c99 -ggdb -Wall -Wextra -Wwrite-strings -Wformat -Werror=format-security -Wno-discarded-qualifiers -fstack-protector-strong -fstack-clash-protection -fcf-protection -fdebug-prefix-map=$PWD=. -Wl,-z,now -O2 -D_FORTIFY_SOURCE=2 -D_GNU_SOURCE -o @SHORT lex.yy.c @ARGS && cp bake bake-dbg && strip bake @STOP */
 /* Licensed under the CC0-1.0. */
 
 %{
@@ -27,12 +27,15 @@ int line = 1, expunge_depth, first_nl, tmpline;
 extern void root(char * filename);
 extern void args(int n, int rest);
 extern void shorten(char * filename, int n);
+extern void recurs(int n);
+extern void cc(char * cc, char * filename);
 %}
 
 SPACE [ \t\r\v\f]
                         /* Everything that can be backslashed */
 FILENAME @FILE
 CMD      @BAKE[[:space:]]
+CC       @CC:[\x00-\x7F]+
 MACROS   ({CMD}|@STOP|{FILENAME}|@SHORT|@ARGS|@LINE|@RECURS|$@|$*|$+|@\{)
 
 %x FOUND PADDING STOP
@@ -45,10 +48,10 @@ MACROS   ({CMD}|@STOP|{FILENAME}|@SHORT|@ARGS|@LINE|@RECURS|$@|$*|$+|@\{)
 {CMD} { bake:
   static int nth = 0;
   first_nl = 1;
-  if (yytext[yyleng-1] == '\n') { ++line;                                                      }
-  if (!g_select)                {                                                            ; }
+  if (yytext[yyleng-1] == '\n') { ++line;                                                                }
+  if (!g_select)                {                                                                      ; }
   else if (g_select < 0)        { BEGIN FOUND; fprintf(stderr2, "%s:%d:s%d: ", g_filename, line, ++nth); }
-  else if (!--g_select)         { BEGIN FOUND;                                                 }
+  else if (!--g_select)         { BEGIN FOUND;                                                           }
 }
 
 <FOUND>{
@@ -78,7 +81,11 @@ MACROS   ({CMD}|@STOP|{FILENAME}|@SHORT|@ARGS|@LINE|@RECURS|$@|$*|$+|@\{)
  @ARGS:[[:digit:]]+\+ { args(atoi(strrchr(yytext, ':')+1), 1);                                               }
  @ARGS|$\+            { args(0, 1);                                                                          }
  @LINE                { FORMAT("%d", line);                                                                  }
- @RECURS              { char * prog = realpath(av0, NULL); STRING(prog); free(prog);                         }
+ @RECURS              { recurs(0);                                                                           }
+ @RECURS:[[:digit:]]+ { recurs(atoi(strrchr(yytext, ':')+1));                                                }
+ @RECUR:[[:digit:]]+  { recurs(atoi(strrchr(yytext, ':')+1)); FORMAT("-q %s", g_filename);                   }
+ @CC                  { cc("cc", g_filename);                                                                }
+ {CC}                 { cc(yytext+4, g_filename);                                                            }
  \\{MACROS}           { STRING(yytext + 1);                                                                  }
  {SPACE}              { CHAR(' '); if (!g_skip) { BEGIN PADDING; }                                           }
  \n                   { CHAR('\n'); ++line; if (first_nl) { BEGIN STOP; first_nl = 0; tmpline = 0; }         }
@@ -132,6 +139,28 @@ void shorten(char * filename, int n) {
   }
   FWRITE(filename, end - filename);
 }
+
+// @CC = cc @ARGS:0 -o @SHORT @FILE @ARGS:1
+// @CC:/usr/local/bin/clang = /usr/local/bin/clang @ARGS:0 -o @SHORT @FILE @ARGS:1
+
+void cc(char * cc, char * filename) {
+  char * end = filename + strlen(filename);
+  end = memrchr(filename, '.', end - filename);
+  if (!end) {
+    fprintf(stderr2, "%s: Cannot shorten '%s' any further, aborting due to paranoia\n", av0, filename);
+    abort();
+  }
+  char * a = g_av[0] ? g_av[0] : "", * b = g_av[0] && g_av[1] ? g_av[1] : "";
+  FORMAT("%.*s%s%s -o %.*s %s%s%s", (int) (strchr(cc, ' ') - cc), cc, a[0] ? " " : "", a, (int) (end - filename), filename, filename, b[0] ? " " : "", b);
+}
+
+void recurs(int n) {
+  // The POSIX.1-2001 standard version of this function is broken by  design
+  char * prog = realpath(av0, NULL);
+  FORMAT(n ? "%s -s %d" : "%s", prog, n);
+  free(prog);
+}
+
 
 void help(void) { fprintf(stderr2, g_color ? BOLD "%s" RESET : "%s", "see bake(1) - \"Buy high. Sell low.\"\n"); }
 
