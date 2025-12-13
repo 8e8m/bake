@@ -9,7 +9,7 @@ OR JUST RUN: ./install.sh (has --help)
 
 ---
 
-bake [-chln] [-s <n>] <FILENAME> [ARGS...]; version 20250104
+bake [-chln] [-s <n>] <FILENAME> [ARGS...]; version 20251213
 
 Bake is a simple tool meant to execute embedded shell commands within
 any file. It executes with /bin/sh the command after a "@BAKE " to the
@@ -21,7 +21,7 @@ I cannot stress this enough: Bake executes in the directory of the
 file specified.
 
 It expands some macros,
-  @FILE                 - filename
+  @FILE                 - invoked filename
   @SHORT                - filename without suffix (abc.x.txt \-> abc.x)
   @SHORT:N              - removes N suffixes, so (a.b.c 2 -> a)
   @ARGS                 - other arguments to the program
@@ -40,6 +40,8 @@ Old way of things that you shouldn't do unless you're me or @agvxov:
   $@ = @FILE
   $* = @SHORT
   $+ = @ARGS
+These are also the most supported things in existence, and will work
+in basically all versions of Bake.
 
 All  macros  can be  exempted  by  prefixing  them with  a  backslash,
 which'll be subtracted in the  expansion. Commands may be spanned over
@@ -87,10 +89,10 @@ Bake was created on 2023-09-13, and complete as of 2024-03-02.  While
 it was completed in 2024-03-02 with a focus on very low, tight memory
 usage this was not the final version.
 
-On 2024-09-27, Bake was revised using Flex, which was faster. I
-consider the Flex version finished as of 2025-09-11. For a fully
-featured version - as in all extraneous features - use the latest
-version.
+On 2024-09-27, Bake was revised using Flex, which was faster.  I
+consider the Flex version finished as of 2025-09-11.  Note that, for a
+fully featured version (as in extraneous features), you should
+probably seek versions past 2025-12-13.
 
 --
 
@@ -129,6 +131,30 @@ Upgraded ./install.sh to have options.
 
 s/@(FILE_?NAME|NAME)/@FILE/g
 
+This has caused the following damage in retrospect (20251213):
+
+1 (one) file from myself was broken (@NAME), no files were broken for
+anyone else.
+
+It broke shakes handling of bake.l, which was untested from 20250104
+to 20251213, hence demostrating its lack of use.
+
+Unlike the disrecommendation of $@, $*, & $+, which I've had a problem
+with, but I could not remove becuase of usage, the removal is only
+harmful with the only upside is Bake is free from weight.
+
+On that:
+
+If I had done it today and time traveled it back,
+I'd do what I've done now and include the $ commands paraphrased:
+  @$ ; think $var
+  @* ; ${input_file%.*}
+  @@ ; $@
+The actual commands are my misnomer of the above:
+  $@ ; @ as in email, funnily enough, it's "backwards"
+  $* ; Close enough, but conflicts with Bash. (hence \EVERYTHING)
+  $+ ; misremembering of $@, looks like .+ (and the rest)
+
 2025-09-11
 
 -c destroyed from outerspace. -q added. all Bake specific output is
@@ -152,7 +178,7 @@ Added @CC and @RECUR:N:
 
 --
 
-Anonson, the original creator, made an ebuild for Gentoo:
+@agvxov - the original creator, made a ebuild for Gentoo:
  See <https://bis64wqhh3louusbd45iyj76kmn4rzw5ysawyan5bkxwyzihj67c5lid.onion/anon/agvxov-overlay>
  (this link is dead because Gitea died on him. If I get notice of him
   mirroring it, I'll link it here.)
@@ -161,9 +187,9 @@ Anonson, the original creator, made an ebuild for Gentoo:
  for including this into your installation.
 
 debian: Provided in repo, run...
- tar cJvf bake_20251213.orig.tar.xz --exclude=debian bake-20251213/
+ tar cJvf bake_$VERSION.orig.tar.xz --exclude=debian bake-$VERSION/
  dpkg-buildpackage -us -uc
- dpkg -i ../bake_20251213_*.deb
+ dpkg -i ../bake_*.deb
 
 Or download from the releases.
 

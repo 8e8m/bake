@@ -1,6 +1,7 @@
 #!/bin/sh
 # vim:set ft=awk:
 # Written by Egor, modified for compatibility by Emil.
+# Licensed under the CC0-1.0.
 "exec" "${AWK:-awk}" "-f" "$(basename $0)" "--" "$@" && 0
 function usage() {
 	print "awake: usage: awake [-nl] [-s num] filename [args...]"
