@@ -28,6 +28,7 @@ extern void root(char * filename);
 extern void args(int n, int rest);
 extern void shorten(char * filename, int n);
 extern void recurs(int n);
+extern void recur(char * filename, int n);
 extern void cc(char * cc, char * filename);
 %}
 
@@ -35,8 +36,8 @@ SPACE [ \t\r\v\f]
                         /* Everything that can be backslashed */
 FILENAME @FILE
 CMD      @BAKE[[:space:]]
-CC       @CC:[\x00-\x7F]+
-MACROS   ({CMD}|@STOP|{FILENAME}|@SHORT|@ARGS|@LINE|@RECURS|$@|$*|$+|@\{)
+CC       @CC:[[:graph:]]+
+MACROS   ({CMD}|@STOP|{FILENAME}|@SHORT|@ARGS|@LINE|@RECURS|@RECUR|@CC|$@|$*|$+|@\{)
 
 %x FOUND PADDING STOP
 %option nodefault noinput nounput noyywrap
@@ -83,7 +84,7 @@ MACROS   ({CMD}|@STOP|{FILENAME}|@SHORT|@ARGS|@LINE|@RECURS|$@|$*|$+|@\{)
  @LINE                { FORMAT("%d", line);                                                                  }
  @RECURS              { recurs(0);                                                                           }
  @RECURS:[[:digit:]]+ { recurs(atoi(strrchr(yytext, ':')+1));                                                }
- @RECUR:[[:digit:]]+  { recurs(atoi(strrchr(yytext, ':')+1)); FORMAT(" -q %s", g_filename);                  }
+ @RECUR:[[:digit:]]+  { recur(g_filename, atoi(strrchr(yytext, ':')+1));                                     }
  @CC                  { cc("cc", g_filename);                                                                }
  {CC}                 { cc(yytext+4, g_filename);                                                            }
  \\{MACROS}           { STRING(yytext + 1);                                                                  }
@@ -140,9 +141,6 @@ void shorten(char * filename, int n) {
   FWRITE(filename, end - filename);
 }
 
-// @CC = cc @ARGS:0 -o @SHORT @FILE @ARGS:1
-// @CC:/usr/local/bin/clang = /usr/local/bin/clang @ARGS:0 -o @SHORT @FILE @ARGS:1
-
 void cc(char * cc, char * filename) {
   char * end = filename + strlen(filename);
   end = memrchr(filename, '.', end - filename);
@@ -150,8 +148,9 @@ void cc(char * cc, char * filename) {
     fprintf(stderr2, "%s: Cannot shorten '%s' any further, aborting due to paranoia\n", av0, filename);
     abort();
   }
-  char * a = g_av[0] ? g_av[0] : "", * b = g_av[0] && g_av[1] ? g_av[1] : "";
-  FORMAT("%.*s%s%s -o %.*s %s%s%s", (int) (strchr(cc, ' ') - cc), cc, a[0] ? " " : "", a, (int) (end - filename), filename, filename, b[0] ? " " : "", b);
+  char * a = g_av[0] ? g_av[0] : "",
+       * b = g_av[0] && g_av[1] ? g_av[1] : "";
+  FORMAT("%s%s%s -o %.*s %s %s%s", cc, a[0] ? " " : "", a, (int) (end - filename), filename, filename, b[0] && b[0] ? " " : "", b);
 }
 
 void recurs(int n) {
@@ -161,6 +160,12 @@ void recurs(int n) {
   free(prog);
 }
 
+void recur(char * filename, int n) {
+  int i;
+  recurs(n);
+  FORMAT(" -q %s", filename);
+  for (i = 0; i < g_ac; ++i) { FORMAT(" %s", g_av[i]); }
+}
 
 void help(void) { fprintf(stderr2, g_color ? BOLD "%s" RESET : "%s", "see bake(1) - \"Buy high. Sell low.\"\n"); }
 
@@ -188,7 +193,7 @@ void print(FILE * fp, char * color_prefix, char * format, ...) {
 int main (int ac, char ** av) {
   int run = 1;
   av0 = av[0];
-  stderr2 = fdopen(dup(STDERR_FILENO), "a+");
+  stderr2 = fdopen(dup(STDERR_FILENO), "a");
   FILE * fp, * stderr2_quiet = stderr2;
   /* supports long/short, -allinone, (-X ... -X=... -X<NUM>) */
   while (++av, --ac) {
