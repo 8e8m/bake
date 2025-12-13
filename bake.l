@@ -83,7 +83,7 @@ MACROS   ({CMD}|@STOP|{FILENAME}|@SHORT|@ARGS|@LINE|@RECURS|$@|$*|$+|@\{)
  @LINE                { FORMAT("%d", line);                                                                  }
  @RECURS              { recurs(0);                                                                           }
  @RECURS:[[:digit:]]+ { recurs(atoi(strrchr(yytext, ':')+1));                                                }
- @RECUR:[[:digit:]]+  { recurs(atoi(strrchr(yytext, ':')+1)); FORMAT("-q %s", g_filename);                   }
+ @RECUR:[[:digit:]]+  { recurs(atoi(strrchr(yytext, ':')+1)); FORMAT(" -q %s", g_filename);                  }
  @CC                  { cc("cc", g_filename);                                                                }
  {CC}                 { cc(yytext+4, g_filename);                                                            }
  \\{MACROS}           { STRING(yytext + 1);                                                                  }
