@@ -167,6 +167,9 @@ misalignment.
 
 2025-12-13
 
+Bugfix for stderr handling, present only since last. Bug caused by
+changes for musl.
+
 Added @CC and @RECUR:N:
 @CC = cc @ARGS:0 -o @SHORT @FILE @ARGS:1
 @CC:/path/to/compiler = /path/to/compiler @ARGS:0 -o @SHORT @FILE @ARGS:1
