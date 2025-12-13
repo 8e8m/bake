@@ -42,7 +42,7 @@ Old way of things that you shouldn't do unless you're me or @agvxov:
   $+ = @ARGS
 
 All  macros  can be  exempted  by  prefixing  them with  a  backslash,
-which'll be subtracted in the  expansion. commands may be spanned over
+which'll be subtracted in the  expansion. Commands may be spanned over
 several lines with a leading backslash.
 
 A list of all @BAKEs in a file can be retrieved with
@@ -87,8 +87,12 @@ Bake was created on 2023-09-13, and complete as of 2024-03-02.  While
 it was completed in 2024-03-02 with a focus on very low, tight memory
 usage this was not the final version.
 
-On 2024-09-27, Bake was revised using Flex, which was faster.  I
-consider the Flex version finished as of 2025-09-11.
+On 2024-09-27, Bake was revised using Flex, which was faster. I
+consider the Flex version finished as of 2025-09-11. For a fully
+featured version - as in all extraneous features - use the latest
+version.
+
+--
 
 2024-03-02
 
@@ -148,7 +152,7 @@ Added @CC and @RECUR:N:
 
 --
 
-Anonson, the original creator, made a ebuild for Gentoo:
+Anonson, the original creator, made an ebuild for Gentoo:
  See <https://bis64wqhh3louusbd45iyj76kmn4rzw5ysawyan5bkxwyzihj67c5lid.onion/anon/agvxov-overlay>
  (this link is dead because Gitea died on him. If I get notice of him
   mirroring it, I'll link it here.)
@@ -157,9 +161,9 @@ Anonson, the original creator, made a ebuild for Gentoo:
  for including this into your installation.
 
 debian: Provided in repo, run...
- tar cJvf bake_20251208.orig.tar.xz --exclude=debian bake-20251208/
+ tar cJvf bake_20251213.orig.tar.xz --exclude=debian bake-20251213/
  dpkg-buildpackage -us -uc
- dpkg -i ../bake_20251208_*.deb
+ dpkg -i ../bake_20251213_*.deb
 
 Or download from the releases.
 
