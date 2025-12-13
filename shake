@@ -1,10 +1,10 @@
 #!/bin/bash
 
 # Originally written by Anon, modified by Emil to better match Bake.
-# Please don't use this to compile Bake, use Awake instead.
+# Crippled subset.
 # Licensed under the CC0-1.0.
 
-VERSION="20240408"
+VERSION="20251213"
 
 BLUE='\033[34m'
 GREEN='\033[32m'
@@ -26,7 +26,7 @@ usage() {
     echo -e "Options [Must be first]"
     echo -e "\t${DIM}-h --help${NORMAL}, ${BOLD}-n --dry-run${NORMAL}\n"
     echo -e "Expansions\n"
-    echo -e "\t${YELLOW}@FILENAME${NORMAL}  returns target-file                (abc.x.txt)"
+    echo -e "\t${YELLOW}@FILE${NORMAL}  returns target-file                (abc.x.txt)"
     echo -e "\t${YELLOW}@SHORT${NORMAL}     returns target-file without suffix (^-> abc.x)"
     echo -e "\t${YELLOW}@ARGS${NORMAL}      returns ${GREEN}arguments${NORMAL}"
     echo -e "\t${YELLOW}@{${NORMAL}${BOLD}EXPUNGE_THIS_FILE${YELLOW}}${NORMAL} inline region to delete this or many files or directories,"
@@ -76,7 +76,7 @@ if [[ -n $line ]]; then
     line=${line//\$@/$input_file}
     line=${line//\$\*/${input_file%.*}}
     line=${line//\$+/$@}
-    line=${line//@FILENAME/$input_file}
+    line=${line//@FILE/$input_file}
     line=${line//@SHORT/${input_file%.*}}
     line=${line//@ARGS/$@}
     line=$(echo "$line" | sed 's/@STOP.*//')
