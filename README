@@ -2,10 +2,15 @@
 
 Run embedded scripts.
 
+It's basically:
+#!/usr/bin/env sh
+sed 1,2d "$0" | cc -x c - -o "${0%.*}"; return
+If you really think about it.
+
 Bootstrap with ./awake bake.l
 then compile further with ./bake,
 
-OR JUST RUN: ./install.sh (has --help)
+OR JUST RUN: ./install.sh (try --help)
 
 ---
 

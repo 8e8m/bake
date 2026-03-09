@@ -154,10 +154,13 @@ void cc(char * cc, char * filename) {
 }
 
 void recurs(int n) {
-  // The POSIX.1-2001 standard version of this function is broken by  design
-  char * prog = realpath(av0, NULL);
-  FORMAT(n ? "%s -s %d" : "%s", prog, n);
-  free(prog);
+# define RECURS_MAX_LENGTH (1<<7)
+  char prog[RECURS_MAX_LENGTH];
+  ssize_t length = readlink("/proc/self/exe", prog, RECURS_MAX_LENGTH-1);
+  if (length < 0) {
+    fprintf(stderr2, "%s: Aborting due to failed readlink in recurs, perhaps operating system is not Linux?\n", av0); abort();
+  }
+  FORMAT(n ? "%.*s -s %d" : "%.*s", (int) length, prog, n);
 }
 
 void recur(char * filename, int n) {
