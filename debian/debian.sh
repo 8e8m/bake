@@ -10,9 +10,13 @@ tar cJv \
   -f bake_0~$v.orig.tar.xz bake-0~$v/
 cd bake-0~$v
 dpkg-buildpackage -us -uc
+echo you should see two plus marks:
 grep 'home' bake || \
-  echo "if you see this message there are no references to home in the executable"
-./bake -s2 bake.l
+  echo -n "+"
+./bake -qs2 bake.l
+grep 'home' bake || \
+    echo -n "+"
+echo
 for i in bake bake-dbg ../*deb ../*xz; do gpg --yes -u emil@chud.cyou --detach-sign $i; done
 rm -rf ../export-auto
 mkdir -p ../export-auto/
