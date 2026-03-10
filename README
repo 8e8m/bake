@@ -14,7 +14,7 @@ OR JUST RUN: ./install.sh (try --help)
 
 ---
 
-bake [-chln] [-s <n>] <FILENAME> [ARGS...]; version 20251213
+bake [-chln] [-s <n>] <FILENAME> [ARGS...]; version 20260310
 
 Bake is a simple tool meant to execute embedded shell commands within
 any file. It executes with /bin/sh the command after a "@BAKE " to the
@@ -136,13 +136,13 @@ Upgraded ./install.sh to have options.
 
 s/@(FILE_?NAME|NAME)/@FILE/g
 
-This has caused the following damage in retrospect (20251213):
+This has caused the following damage in retrospect (20260310):
 
 1 (one) file from myself was broken (@NAME), no files were broken for
 anyone else.
 
 It broke shakes handling of bake.l, which was untested from 20250104
-to 20251213, hence demostrating its lack of use.
+to 20260310, hence demostrating its lack of use.
 
 Unlike the disrecommendation of $@, $*, & $+, which I've had a problem
 with, but I could not remove becuase of usage, the removal is only
