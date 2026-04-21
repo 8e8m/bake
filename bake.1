@@ -1,4 +1,4 @@
-.TH BAKE "1" "March 2026" "bake 20260310" "User Commands"
+.TH BAKE "1" "March 2026" "bake 20260420" "User Commands"
 .SH NAME
 .B bake
 \- file embeddable scripts
@@ -68,8 +68,8 @@ returns full executable name and the filename, also silences bake.
 This is a specialized for one purpose, and should be ignored in general.
 You might have to use recursion to properly phrase CC commands with this.
 .EX
-@CC = cc @ARGS:0 -o @SHORT @FILE @ARGS:1
-@CC:/path/to/cc = /path/to/cc @ARGS:0 -o @SHORT @FILE @ARGS:1
+@CC = cc @ARGS:0 -o @SHORT @FILE @ARGS:1+
+@CC:/path/to/cc = /path/to/cc @ARGS:0 -o @SHORT @FILE @ARGS:1+
 
 Example recursion:
 @BAKE @RECUR:2 "left" "right"

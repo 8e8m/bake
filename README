@@ -14,7 +14,7 @@ OR JUST RUN: ./install.sh (try --help)
 
 ---
 
-bake [-chln] [-s <n>] <FILENAME> [ARGS...]; version 20260310
+bake [-chln] [-s <n>] <FILENAME> [ARGS...]; version 20260420
 
 Bake is a simple tool meant to execute embedded shell commands within
 any file. It executes with /bin/sh the command after a "@BAKE " to the
@@ -98,6 +98,11 @@ On 2024-09-27, Bake was revised using Flex, which was faster.  I
 consider the Flex version finished as of 2025-09-11.  Note that, for a
 fully featured version (as in extraneous features), you should
 probably seek versions past 2025-12-13.
+
+As of now (2026-04-20), I do not recommend using any prior version as
+they were extremely circumstantial (read: the code was more horrifying
+than it currently is by an order of magnitude.) Please use the latest
+version.
 
 --
 
@@ -184,15 +189,36 @@ Added @CC and @RECUR:N:
 @CC: I wanted something that does what I do in most usages of Bake.
 @RECURS:N: This is a nice looking hack benefiting @CC's design.
 
+2026-04-20
+
+Fixed:
+When running -s 1 on an file without Bake, there will be a duplicate instance of /file/to/bake.
+TERM=dumb not respected for coloration.
+@CC should @ARGS:2+. (note that the function for this in prior was geniunely horrifying.)
+Doesn't run man on --help despite advertising it.
+
+These were minor issues I had been accumulating with Bake.
+This should reduce the applicable general bugs from 0 to -4.
+
 --
 
 @agvxov - the original creator, made a ebuild for Gentoo:
- See <https://bis64wqhh3louusbd45iyj76kmn4rzw5ysawyan5bkxwyzihj67c5lid.onion/anon/agvxov-overlay>
- (this link is dead because Gitea died on him. If I get notice of him
-  mirroring it, I'll link it here.)
+ See <https://bis64wqhh3louusbd45iyj76kmn4rzw5ysawyan5bkxwyzihj67c5lid.onion/~anon/agvxov-overlay>
+ (Note: anon still hasn't fixed this build, so don't use it, but he could one day, maybe,
+  do the impossible of
+  sed -i 's_https://bis64wqhh3louusbd45iyj76kmn4rzw5ysawyan5bkxwyzihj67c5lid.onion/emil/bake.git_https://bis64wqhh3louusbd45iyj76kmn4rzw5ysawyan5bkxwyzihj67c5lid.onion/~emil/bake.git_' bake-9999.ebuild
+  ebuild *.ebuild
+  )
 
  packaged under the agvxov overlay as dev-build/bake, see the README
  for including this into your installation.
+
+ This ebuild has since been revised by myself,
+ See <https://github.com/8e8m/emillionaire>
+ Which is comparable to the above ebuild with versions and a better
+ source link of:
+ <https://github.com/8e8m/bake>
+ Both repos should be in sync, at least in the dev-build/bake-9999 build sense, but mine is sure to work.
 
 debian: Provided in repo, run...
  tar cJvf bake_$VERSION.orig.tar.xz --exclude=debian bake-$VERSION/
@@ -201,7 +227,14 @@ debian: Provided in repo, run...
 
 Or download from the releases.
 
+A static build from musl is provided via `-s 2`, however it is
+dependent on the non-universal debian specific gcc-musl, please either
+change this manually or create a symlink in your system to
+`x86_64-pc-linux-musl-gcc` or likewise.
+
 I'm finished with tool for the rest of time.
 If I use it and it breaks, I'll fix it. If there's an issue:
 
 Send mail to <mailto:emil@chud.cyou>
+
+

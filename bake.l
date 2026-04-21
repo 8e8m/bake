@@ -1,5 +1,5 @@
-/* @BAKE flex -D_FORTIFY_SOURCE=2 -D_GNU_SOURCE @FILE && gcc -std=c99 -ggdb -Wall -Wextra -Wwrite-strings -Wformat -Werror=format-security -Wno-discarded-qualifiers -fstack-protector-strong -fstack-clash-protection -fcf-protection -fdebug-prefix-map=$PWD=. -Wl,-z,now -O2 -D_FORTIFY_SOURCE=2 -D_GNU_SOURCE -o @SHORT lex.yy.c @ARGS @STOP
-@BAKE flex -D_FORTIFY_SOURCE=2 -D_GNU_SOURCE @FILE && musl-gcc --static -std=c99 -ggdb -Wall -Wextra -Wwrite-strings -Wformat -Werror=format-security -Wno-discarded-qualifiers -fstack-protector-strong -fstack-clash-protection -fcf-protection -fdebug-prefix-map=$PWD=. -Wl,-z,now -O2 -D_FORTIFY_SOURCE=2 -D_GNU_SOURCE -o @SHORT lex.yy.c @ARGS && cp bake bake-dbg && strip bake @STOP */
+/* @BAKE flex -D_GNU_SOURCE @FILE && gcc -std=gnu99 -ggdb -Wall -Wextra -Wwrite-strings -Wformat -Werror=format-security -Wno-discarded-qualifiers -fstack-protector-strong -fstack-clash-protection -fcf-protection -fdebug-prefix-map=$PWD=. -Wl,-z,now -O2 -o @SHORT lex.yy.c @ARGS @STOP
+@BAKE flex -D_GNU_SOURCE @FILE && musl-gcc --static -std=gnu99 -ggdb -Wall -Wextra -Wwrite-strings -Wformat -Werror=format-security -Wno-discarded-qualifiers -fstack-protector-strong -fstack-clash-protection -fcf-protection -fdebug-prefix-map=$PWD=. -Wl,-z,now -O2 -o @SHORT lex.yy.c @ARGS && cp bake bake-dbg && strip bake @STOP */
 /* Licensed under the CC0-1.0. */
 
 %{
@@ -110,6 +110,7 @@ MACROS   ({CMD}|@STOP|{FILENAME}|@SHORT|@ARGS|@LINE|@RECURS|@RECUR|@CC|$@|$*|$+|
 #include <limits.h>
 #include <stdarg.h>
 
+# define  CLEAR "\033[2K\r" /* works well on dumb terminals in this case */
 # define    RED "\033[91m"
 # define  GREEN "\033[92m"
 # define YELLOW "\033[93m"
@@ -122,7 +123,7 @@ void root(char * filename) {
   if (!realpath(filename, path)) { return; }
   if ((terminator = strrchr(path, '/'))) {
     *terminator = '\0';
-    if(chdir(path)) { abort(); }
+    if(chdir(path)) { exit(1); }
   }
 }
 
@@ -135,22 +136,20 @@ void shorten(char * filename, int n) {
   char * end = filename + strlen(filename);
   while (n && (end = memrchr(filename, '.', end - filename))) { --n; }
   if (!end) {
-    fprintf(stderr2, "%s: Cannot shorten '%s' any further, aborting due to paranoia\n", av0, filename);
-    abort();
+    fprintf(stderr2, "%s: Cannot shorten '%s' any further, stopping due to paranoia\n", av0, filename);
+    exit(1);
   }
   FWRITE(filename, end - filename);
 }
 
 void cc(char * cc, char * filename) {
-  char * end = filename + strlen(filename);
-  end = memrchr(filename, '.', end - filename);
-  if (!end) {
-    fprintf(stderr2, "%s: Cannot shorten '%s' any further, aborting due to paranoia\n", av0, filename);
-    abort();
-  }
-  char * a = g_av[0] ? g_av[0] : "",
-       * b = g_av[0] && g_av[1] ? g_av[1] : "";
-  FORMAT("%s%s%s -o %.*s %s %s%s", cc, a[0] ? " " : "", a, (int) (end - filename), filename, filename, b[0] && b[0] ? " " : "", b);
+  char * a = g_av[0] ? g_av[0] : "";
+  FORMAT("%s%s%s -o ", cc, a[0] ? " " : "", a);
+  shorten(filename, 1);
+  FWRITE(" ", 1);
+  FWRITE(filename, strlen(filename));
+  FWRITE(" ", 1);
+  args(1, 1);
 }
 
 void recurs(int n) {
@@ -158,7 +157,8 @@ void recurs(int n) {
   char prog[RECURS_MAX_LENGTH];
   ssize_t length = readlink("/proc/self/exe", prog, RECURS_MAX_LENGTH-1);
   if (length < 0) {
-    fprintf(stderr2, "%s: Aborting due to failed readlink in recurs, perhaps operating system is not Linux?\n", av0); abort();
+    fprintf(stderr2, "%s: Stopping due to failed readlink in recurs, perhaps operating system is not GNU?\n", av0);
+    exit(1);
   }
   FORMAT(n ? "%.*s -s %d" : "%.*s", (int) length, prog, n);
 }
@@ -170,11 +170,17 @@ void recur(char * filename, int n) {
   for (i = 0; i < g_ac; ++i) { FORMAT(" %s", g_av[i]); }
 }
 
-void help(void) { fprintf(stderr2, g_color ? BOLD "%s" RESET : "%s", "see bake(1) - \"Buy high. Sell low.\"\n"); }
+void help(void) {
+  char * program_name = av0;
+  char * name = strrchr(av0, '/');
+  execlp("man", "man", name ? name+1 : program_name, NULL);
+  fprintf(stderr2, g_color ? RED "%s" RESET ": <execlp> %s\n" : "%s: <execlp> %s\n", av0, strerror(errno));
+  exit(1);
+}
 
 FILE * pipeopen(char * filename, char * mode) {
   FILE * pipe = popen(filename, mode);
-  if (!pipe) { fprintf(stderr2, "%s: <pipeopen> %s\n", av0, strerror(errno)); exit(1); }
+  if (!pipe) { fprintf(stderr2, g_color ? RED "%s" RESET ": <pipeopen> %s\n" : "%s: <pipeopen> %s\n", av0, strerror(errno)); exit(1); }
   return pipe;
 }
 
@@ -223,28 +229,40 @@ int main (int ac, char ** av) {
                  if (isdigit(av[0][i+1]))         { g_select = atoi(av[0]+i+1); }
             else if (ac > 1 && isdigit(av[1][0])) { ++av, --ac; opt_select: g_select = atoi(av[0]); }
             else                                  { g_select = 0; }
-                 if (!g_select)                   { fprintf(stderr2, "%s: Invalid argument for -s\n", av0); return 1; }
+                 if (!g_select)                   { fprintf(stderr2, g_color ? RED "%s" RESET ": Invalid argument for -s\n" : "%s: Invalid argument for -s\n", av0); return 1; }
           }
           i = strlen(av[0]);
           break;
         opt_list:    case 'l': run = 0; g_select = -1; break;
         opt_help:    case 'h': help(); return 0;
-        opt_quiet:   case 'q': stderr2 = fopen("/dev/null", "w"); if (!stderr2) { stderr2 = stderr2_quiet; perror(av0); return 1; } break;
+        opt_quiet:   case 'q':
+          stderr2 = fopen("/dev/null", "w");
+          if (!stderr2) {
+            stderr2 = stderr2_quiet;
+            fprintf(stderr2, g_color ? RED "%s" RESET ": %s\n" : "%s: %s\n", av0, strerror(errno));
+            return 1;
+          }
+          break;
         /* opt_color:   case 'c': g_color = 0; break; */
         opt_expunge: case 'x': if (g_select > 0) { g_rm = 1; } break;
-        opt_default:  default: fprintf(stderr2, "%s: Unknown option '%s'\n", av0, av[0]); return 1;
-        opt_arg:               fprintf(stderr2, "%s: Argument missing for '%s'\n", av0, av[0]); return 1;
+        opt_default:  default: fprintf(stderr2, g_color ? RED "%s" RESET ": Unknown option '%s'\n" : "%s: Unknown option '%s'\n", av0, av[0]); return 1;
+        opt_arg:               fprintf(stderr2, g_color ? RED "%s" RESET ": Argument missing for '%s'\n" : "%s: Argument missing for '%s'\n", av0, av[0]); return 1;
       }
     }
   }
 
- start:
+start:
   {
+    /* respect TERM=.*color, thus implicitly supporting dumb terminals */
+    char * term = getenv("TERM");
+    term = term ? term : "";
+    char * off = term + strlen(term) - strlen("color");
+    term = off >= term ? off : "";
     char *no_color = getenv("NO_COLOR");
-    if (no_color != NULL && no_color[0] != '\0') { g_color = 0; }
+    if ((no_color != NULL && no_color[0] != '\0')
+        ||  (strcmp(term,"color"))) { g_color = 0; }
   }
-  if (!ac) { fprintf(stderr2, "%s: Missing filename\n", av0); return 1; }
-  if (!g_select) { goto out_of_range; }
+  if (!ac) { fprintf(stderr2, g_color ? RED "%s" RESET ": Missing filename\n" : "%s: Missing filename\n", av0); return 1; }
 
   g_filename = av[0];
   root(g_filename);
@@ -295,9 +313,11 @@ int main (int ac, char ** av) {
     run = pclose(g_pipe); /* repurposed run */
     if (swap) { fclose(stderr2); stderr2 = swap; }
     if (!g_rm) { fputc('\n', stderr2); }
-    if (run < 0) { fprintf(stderr2, "%s: Exit failure\n", av0); }
-    if (run > 0) { fprintf(stderr2, "%s: Exit code %d\n", av0, run); }
+    if (run < 0) { fprintf(stderr2, g_color ? RED "%s" RESET ": Exit failure\n" : "%s: Exit Failure\n", av0); }
+    if (run > 0) { fprintf(stderr2, g_color ? RED "%s" RESET ": Exit code %d\n" : "%s: Exit code %d\n", av0, run); }
     return run ? 1 : 0;
-    out_of_range: fprintf(stderr2, "%s: <%d> Out of range\n", av0, g_select); return 1;
+  out_of_range: /* strangely, will only ever be invoked with the green coloring. */
+    fprintf(stderr2, g_color ? CLEAR RED "%s" RESET ": " BOLD "<%d>" RESET " Out of range\n" : "%s<%d> Out of range\n", g_color ? av0 : "", g_select);
+    return 1;
   }
 }
