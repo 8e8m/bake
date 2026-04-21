@@ -123,7 +123,10 @@ void root(char * filename) {
   if (!realpath(filename, path)) { return; }
   if ((terminator = strrchr(path, '/'))) {
     *terminator = '\0';
-    if(chdir(path)) { exit(1); }
+    if(chdir(path)) {
+      fprintf(stderr2, g_color ? RED "%s" RESET ": " BOLD "'%s'" RESET " %s\n" : "%s: '%s' %s\n", av0, path, strerror(errno));
+      exit(1);
+    }
   }
 }
 
@@ -153,11 +156,10 @@ void cc(char * cc, char * filename) {
 }
 
 void recurs(int n) {
-# define RECURS_MAX_LENGTH (1<<7)
-  char prog[RECURS_MAX_LENGTH];
-  ssize_t length = readlink("/proc/self/exe", prog, RECURS_MAX_LENGTH-1);
+  char prog[PATH_MAX];
+  ssize_t length = readlink("/proc/self/exe", prog, PATH_MAX-1);
   if (length < 0) {
-    fprintf(stderr2, "%s: Stopping due to failed readlink in recurs, perhaps operating system is not GNU?\n", av0);
+    fprintf(stderr2, g_color ? RED "%s" RESET ": Stopping due to failed readlink in recurs, perhaps operating system is not GNU?\n" : "%s: Stopping due to failed readlink in recurs, perhaps operating system is not GNU?\n", av0);
     exit(1);
   }
   FORMAT(n ? "%.*s -s %d" : "%.*s", (int) length, prog, n);
@@ -178,31 +180,17 @@ void help(void) {
   exit(1);
 }
 
-FILE * pipeopen(char * filename, char * mode) {
+FILE * pipeopen(const char * filename, const char * mode) {
   FILE * pipe = popen(filename, mode);
   if (!pipe) { fprintf(stderr2, g_color ? RED "%s" RESET ": <pipeopen> %s\n" : "%s: <pipeopen> %s\n", av0, strerror(errno)); exit(1); }
   return pipe;
-}
-
-void print(FILE * fp, char * color_prefix, char * format, ...) {
-  va_list ap;
-  size_t len = strlen(format);
-  g_color ? fprintf(fp, "%s%s: ", color_prefix, av0)
-          : fprintf(fp,   "%s: ", av0);
-  va_start(ap, format);
-  for (size_t i = 0, f = 0; i < len; ++i) {
-    if (!(format[i] ^ '\033')) {
-      while (format[i] && format[i] != 'm') ++i;
-    } else format[f++] = format[i];
-  }
-  vfprintf(fp, format, ap);
-  va_end(ap);
 }
 
 int main (int ac, char ** av) {
   int run = 1;
   av0 = av[0];
   stderr2 = fdopen(dup(STDERR_FILENO), "a");
+  if (!stderr2) { fprintf(stderr, g_color ? RED "%s" RESET ": %s\n" : "%s: %s\n", av0, strerror(errno)); }
   FILE * fp, * stderr2_quiet = stderr2;
   /* supports long/short, -allinone, (-X ... -X=... -X<NUM>) */
   while (++av, --ac) {
@@ -280,7 +268,6 @@ start:
   /* setup pipe and output */
 
   if (run) {
-#define pipeopen(a,b) pipeopen((char*)(a), (char*)(b))
     g_pipe = pipeopen("/bin/sh -e /dev/stdin", "w");
   }
   if (g_rm) {
