@@ -1,10 +1,13 @@
 #!/bin/sh
 # source install
 
-cd "$(dirname "$(readlink -f $0)")" || exit
+set -eo pipefail
+
+cd "$(dirname "$(readlink -f $0)")"
 
 TARGET="${TARGET:-/usr/local}"
 INSTALL="bake"
+BUILD=0
 
 usage() {
     echo "compiles and installs Bake into /usr/local (or TARGET) in bin/"
@@ -42,6 +45,10 @@ if [ -z $BUILD ]; then
     ./awake bake.l
 fi
 
-mkdir -p "$TARGET/bin" "$TARGET/share/man/man1"
+if [ ! $NOMAN ]; then
+    mkdir -p "$TARGET/share/man/man1"
+    gzip -c bake.1 > "$TARGET/share/man/man1/bake.1.gz"
+fi
+
+mkdir -p "$TARGET/bin"
 install -m 755 $INSTALL "$TARGET/bin"
-gzip -c bake.1 > "$TARGET/share/man/man1/bake.1.gz"
