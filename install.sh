@@ -42,6 +42,6 @@ if [ -z $BUILD ]; then
     ./awake bake.l
 fi
 
-mkdir -p "$TARGET/bin" "$TARGET/man/man1"
+mkdir -p "$TARGET/bin" "$TARGET/share/man/man1"
 install -m 755 $INSTALL "$TARGET/bin"
-gzip -c bake.1 > "$TARGET/man/man1/bake.1.gz"
+gzip -c bake.1 > "$TARGET/share/man/man1/bake.1.gz"
