@@ -14,7 +14,7 @@ OR JUST RUN: ./install.sh (try --help)
 
 ---
 
-bake [-chln] [-s <n>] <FILENAME> [ARGS...]; version 20260420
+bake [-hlnqx] [-s <n>] <FILENAME> [ARGS...]; version 20260420
 
 Bake is a simple tool meant to execute embedded shell commands within
 any file. It executes with /bin/sh the command after a "@BAKE " to the
@@ -37,8 +37,8 @@ It expands some macros,
   @LINE                 - line number at the selected @BAKE
 
 Some additional specialized macros exist:
-  @CC                  - cc @ARGS:0 -o @SHORT @FILE @ARGS:1
-  @CC:/path/to/cc      - /path/to/cc @ARGS:0 -o @SHORT @FILE @ARGS:1
+  @CC                  - cc @ARGS:0 -o @SHORT @FILE @ARGS:1+
+  @CC:/path/to/cc      - /path/to/cc @ARGS:0 -o @SHORT @FILE @ARGS:1+
   @RECUR:N             - @RECURS:N -q @FILE = @RECUR:N
 
 Old way of things that you shouldn't do unless you're me or @agvxov:
@@ -199,6 +199,12 @@ Doesn't run man on --help despite advertising it.
 
 These were minor issues I had been accumulating with Bake.
 This should reduce the applicable general bugs from 0 to -4.
+
+2026-11-11
+
+Fixed a bunch of bugs that Claude found/I found & fixed but hadn't committed.
+Larping supporting BSD/Appelet, definitely untested.
+Some documentation consistency issues fixed, I guess, minor overall.
 
 --
 

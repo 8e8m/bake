@@ -3,7 +3,19 @@
 /* Licensed under the CC0-1.0. */
 
 %{
+#if defined(__unix__) || (defined(__APPLE__) && defined(__MACH__))
+#include <sys/param.h>
+# if defined(BSD)
+#   include <sys/sysctl.h>
+# endif
+# if defined(__APPLE__)
+#   include <mach-o/dyld.h>
+#   include <stdint.h>
+# endif
+#endif
+
 #include <ctype.h>
+#include <sys/wait.h>
 
 #define CHAR(c)          do { if (stderr2) { fputc(c, stderr2);             } if (g_pipe) { fputc(c, g_pipe);             } } while (0)
 #define STRING(s)        do { if (stderr2) { fputs(s, stderr2);             } if (g_pipe) { fputs(s, g_pipe);             } } while (0)
@@ -139,7 +151,11 @@ void shorten(char * filename, int n) {
   char * end = filename + strlen(filename);
   while (n && (end = memrchr(filename, '.', end - filename))) { --n; }
   if (!end) {
-    fprintf(stderr2, "%s: Cannot shorten '%s' any further, stopping due to paranoia\n", av0, filename);
+    fprintf(stderr2, g_color ? RED "%s" RESET ": Cannot shorten '%s' any further, stopping due to paranoia\n" : "%s: Cannot shorten '%s' any further, stopping due to paranoia\n", av0, filename);
+    exit(1);
+  }
+  if (end == filename) {
+    fprintf(stderr2, g_color ? RED "%s" RESET ": '%s' is a dotfile. Stopping.\n" : "%s: '%s' is a dotfile. Stopping.\n", av0, filename);
     exit(1);
   }
   FWRITE(filename, end - filename);
@@ -155,13 +171,37 @@ void cc(char * cc, char * filename) {
   args(1, 1);
 }
 
+/* You should thank DMR every day of your life */
+ssize_t getexecpath_bake(char path[PATH_MAX]) {
+#if defined(__APPLE__)
+  uint32_t n = PATH_MAX;
+  if (_NSGetExecutablePath(path, &n)) { return -1; }
+  return strlen(path);
+#elif defined(BSD) && !defined(__OpenBSD__)
+  size_t n = PATH_MAX;
+  int mib[4] = { CTL_KERN,
+# if defined(__NetBSD__)
+    KERN_PROC_ARGS, -1, KERN_PROC_PATHNAME
+# else
+    KERN_PROC, KERN_PROC_PATHNAME, -1
+# endif
+  };
+  if (sysctl(mib, 4, path, &n, NULL, 0)) { return -1; }
+  return strnlen(path, n);
+#elif defined(__OpenBSD__)
+  return -1;
+#else
+  ssize_t length = readlink("/proc/self/exe", path, PATH_MAX-1);
+       if (length <        0) { path[0]      = '\0'; }
+  else if (length < PATH_MAX) { path[length] = '\0'; }
+  return length;
+#endif
+}
+
 void recurs(int n) {
   char prog[PATH_MAX];
-  ssize_t length = readlink("/proc/self/exe", prog, PATH_MAX-1);
-  if (length < 0) {
-    fprintf(stderr2, g_color ? RED "%s" RESET ": Stopping due to failed readlink in recurs, perhaps operating system is not GNU?\n" : "%s: Stopping due to failed readlink in recurs, perhaps operating system is not GNU?\n", av0);
-    exit(1);
-  }
+  ssize_t length = getexecpath_bake(prog);
+  if (length < 0) { fprintf(stderr2, "%s: Cannot find self-executable path\n", av0); exit(1); }
   FORMAT(n ? "%.*s -s %d" : "%.*s", (int) length, prog, n);
 }
 
@@ -187,10 +227,10 @@ FILE * pipeopen(const char * filename, const char * mode) {
 }
 
 int main (int ac, char ** av) {
-  int run = 1;
+  int run = 1, quieted = 0;
   av0 = av[0];
   stderr2 = fdopen(dup(STDERR_FILENO), "a");
-  if (!stderr2) { fprintf(stderr, g_color ? RED "%s" RESET ": %s\n" : "%s: %s\n", av0, strerror(errno)); }
+  if (!stderr2) { fprintf(stderr, g_color ? RED "%s" RESET ": %s\n" : "%s: %s\n", av0, strerror(errno)); exit(1); }
   FILE * fp, * stderr2_quiet = stderr2;
   /* supports long/short, -allinone, (-X ... -X=... -X<NUM>) */
   while (++av, --ac) {
@@ -224,8 +264,11 @@ int main (int ac, char ** av) {
         opt_list:    case 'l': run = 0; g_select = -1; break;
         opt_help:    case 'h': help(); return 0;
         opt_quiet:   case 'q':
+	  if (quieted) { continue; }
+	  quieted = 1;
           stderr2 = fopen("/dev/null", "w");
           if (!stderr2) {
+	    nodevnull:
             stderr2 = stderr2_quiet;
             fprintf(stderr2, g_color ? RED "%s" RESET ": %s\n" : "%s: %s\n", av0, strerror(errno));
             return 1;
@@ -273,10 +316,11 @@ start:
   if (g_rm) {
     g_restore = stderr2;
     g_expunge = g_pipe;
-    stderr2 = NULL;
+    stderr2 = fopen("/dev/null", "w");
+    if (!stderr2) { goto nodevnull; }
     g_pipe = NULL;
   }
-  if (g_select > 0 && stderr2) { fprintf(stderr2, g_color ? GREEN "%s" RESET ": " : "%s: ", av0); fflush(stderr2); }
+  if (g_select > 0 && !g_rm) { fprintf(stderr2, g_color ? GREEN "%s" RESET ": " : "%s: ", av0); fflush(stderr2); }
 
   yylex(); fflush(stderr2);
 
@@ -287,7 +331,7 @@ start:
   }
   fclose(fp);
 
-  if (g_select > 0) { pclose(g_pipe); goto out_of_range; }
+  if (g_select > 0) { if (g_pipe) { pclose(g_pipe); } goto out_of_range; }
 
   if (!run) { return 0; }
 
@@ -301,7 +345,10 @@ start:
     if (swap) { fclose(stderr2); stderr2 = swap; }
     if (!g_rm) { fputc('\n', stderr2); }
     if (run < 0) { fprintf(stderr2, g_color ? RED "%s" RESET ": Exit failure\n" : "%s: Exit Failure\n", av0); }
-    if (run > 0) { fprintf(stderr2, g_color ? RED "%s" RESET ": Exit code %d\n" : "%s: Exit code %d\n", av0, run); }
+    if (run > 0) {
+      if (WIFSIGNALED(run)) { fprintf(stderr2, g_color ? RED "%s" RESET ": Killed by signal %d\n" : "%s: Killed by signal %d\n", av0, WTERMSIG(run)); }
+      else                  { fprintf(stderr2, g_color ? RED "%s" RESET ": Exit code %d\n"  : "%s: Exit code %d\n",  av0, WEXITSTATUS(run)); }
+    }
     return run ? 1 : 0;
   out_of_range: /* strangely, will only ever be invoked with the green coloring. */
     fprintf(stderr2, g_color ? CLEAR RED "%s" RESET ": " BOLD "<%d>" RESET " Out of range\n" : "%s<%d> Out of range\n", g_color ? av0 : "", g_select);
