@@ -1,7 +1,7 @@
 #!/bin/sh
 # source install
 
-set -eo pipefail
+set -e
 
 cd "$(dirname "$(readlink -f $0)")"
 
