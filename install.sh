@@ -45,7 +45,7 @@ if [ -z $BUILD ]; then
     ./awake bake.l
 fi
 
-if [ ! $NOMAN ]; then
+if [ -z "$NOMAN" ]; then
     mkdir -p "$TARGET/share/man/man1"
     gzip -c bake.1 > "$TARGET/share/man/man1/bake.1.gz"
 fi
