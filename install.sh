@@ -7,7 +7,6 @@ cd "$(dirname "$(readlink -f $0)")"
 
 TARGET="${TARGET:-/usr/local}"
 INSTALL="bake"
-BUILD=0
 
 usage() {
     echo "compiles and installs Bake into /usr/local (or TARGET) in bin/"
